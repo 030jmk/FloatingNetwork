@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jan's Floating Network</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(ellipse at top left, #f0559630 0%, transparent 50%),
+                        radial-gradient(ellipse at top right, #FFAA72 0%, transparent 50%),
+                        radial-gradient(ellipse at bottom left, white 0%, transparent 50%),
+                        radial-gradient(ellipse at bottom right, #FFE8D4 0%, transparent 50%);
+            overflow: hidden;
+            height: 100vh;
+
+        }
+
+        h1 {
+            font-family: 'Georgia', serif;
+            font-size: 4em;
+            color: #000000;
+            z-index: 10;
+        }
+
+        p {
+            font-family: 'Arial', sans-serif;
+            font-size: 2rem;
+            color: #000000;
+        }
+
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .content {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 10;
+                    }
+
+
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .content {
+                padding: 30px 20px;
+                margin: 20px;
+            }
+            
+            .logo {
+                width: 80px;
+                height: 80px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo {
+                width: 60px;
+                height: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="content">
+        <h1></h1>
+        <p></p>
+    </div>
+
+    <script>
+        class NetworkVisualization {
+            // Define constants
+            static INITIAL_VELOCITY_RANGE = 0.5;
+            static SLIGHT_RANDOM_MOVEMENT_FACTOR = 0.02;
+            static MAX_VELOCITY = 1;
+            static NODE_RADIUS_MIN = 2;
+            static NODE_RADIUS_MAX = 4;
+            static NODE_OPACITY_MIN = 0.5;
+            static NODE_OPACITY_MAX = 1;
+
+            constructor(nodeCount = 200, maxDistance = 300) { // Added default values
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.nodes = [];
+                this.maxDistance = maxDistance; // Use passed or default value
+                this.nodeCount = nodeCount;   // Use passed or default value
+
+                this.init();
+                this.createNodes();
+                this.animate();
+            }
+
+            init() {
+                // Set canvas size
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                
+                // Handle window resize
+                window.addEventListener('resize', () => {
+                    this.canvas.width = window.innerWidth;
+                    this.canvas.height = window.innerHeight;
+                });
+            }
+
+            createNodes() {
+                this.nodes = [];
+                for (let i = 0; i < this.nodeCount; i++) {
+                    this.nodes.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height,
+                        vx: (Math.random() - 0.5) * NetworkVisualization.INITIAL_VELOCITY_RANGE, // Velocity x
+                        vy: (Math.random() - 0.5) * NetworkVisualization.INITIAL_VELOCITY_RANGE, // Velocity y
+                        radius: Math.random() * NetworkVisualization.NODE_RADIUS_MAX + NetworkVisualization.NODE_RADIUS_MIN,
+                        opacity: Math.random() * NetworkVisualization.NODE_OPACITY_MAX + NetworkVisualization.NODE_OPACITY_MIN,
+                        color: this.getRandomColor()
+                    });
+                }
+            }
+
+            getRandomColor() {
+                const colors = [
+                    //'rgba(240, 85, 150, 0.8)',  // Pink
+                    //'rgba(255, 170, 114, 0.8)', // Orange
+                    'rgba(255, 255, 255, 0.8)', // White
+                    //'rgba(255, 232, 212, 0.8)', // Cream
+                    //'rgba(253, 81, 8, 0.8)',    // Red-orange
+                    //'rgba(254, 124, 57, 0.8)',  // Light orange
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            updateNodes() {
+                this.nodes.forEach(node => {
+                    // Update position
+                    node.x += node.vx;
+                    node.y += node.vy;
+
+                    // Bounce off edges
+                    if (node.x <= 0 || node.x >= this.canvas.width) {
+                        node.vx *= -1;
+                        node.x = Math.max(0, Math.min(this.canvas.width, node.x));
+                    }
+                    if (node.y <= 0 || node.y >= this.canvas.height) {
+                        node.vy *= -1;
+                        node.y = Math.max(0, Math.min(this.canvas.height, node.y));
+                    }
+
+                    // Add slight random movement
+                    node.vx += (Math.random() - 0.5) * NetworkVisualization.SLIGHT_RANDOM_MOVEMENT_FACTOR;
+                    node.vy += (Math.random() - 0.5) * NetworkVisualization.SLIGHT_RANDOM_MOVEMENT_FACTOR;
+
+                    // Limit velocity
+                    const maxVel = NetworkVisualization.MAX_VELOCITY;
+                    node.vx = Math.max(-maxVel, Math.min(maxVel, node.vx));
+                    node.vy = Math.max(-maxVel, Math.min(maxVel, node.vy));
+                });
+            }
+
+            drawEdges() {
+                this.ctx.globalAlpha = 0.3;
+                
+                for (let i = 0; i < this.nodes.length; i++) {
+                    for (let j = i + 1; j < this.nodes.length; j++) {
+                        const node1 = this.nodes[i];
+                        const node2 = this.nodes[j];
+                        
+                        const dx = node2.x - node1.x;
+                        const dy = node2.y - node1.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < this.maxDistance) {
+                            // Calculate edge opacity based on distance
+                            const opacity = 1 - (distance / this.maxDistance);
+                            
+                            this.ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.5})`;
+                            this.ctx.lineWidth = opacity * 2;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(node1.x, node1.y);
+                            this.ctx.lineTo(node2.x, node2.y);
+                            this.ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            drawNodes() {
+                this.nodes.forEach(node => {
+                    this.ctx.globalAlpha = node.opacity;
+                    
+                    // Draw node shadow/glow
+                    this.ctx.shadowColor = node.color;
+                    this.ctx.shadowBlur = 15;
+                    
+                    // Draw node
+                    this.ctx.fillStyle = node.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // Draw inner bright core
+                    this.ctx.shadowBlur = 0;
+                    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    this.ctx.beginPath();
+                    this.ctx.arc(node.x, node.y, node.radius * 0.4, 0, Math.PI * 2);
+                    this.ctx.fill();
+                });
+            }
+
+            animate() {
+                // Clear canvas
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Update and draw
+                this.updateNodes();
+                this.drawEdges();
+                this.drawNodes();
+                
+                // Continue animation
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const h1Text = urlParams.get('h1');
+        const pText = urlParams.get('p');
+        const nodeCountParam = urlParams.get('nodeCount');
+        const maxDistanceParam = urlParams.get('maxDistance');
+
+        // Initialize the visualization
+        const initialNodeCount = nodeCountParam ? parseInt(nodeCountParam, 10) : 200;
+        const initialMaxDistance = maxDistanceParam ? parseInt(maxDistanceParam, 10) : 300;
+        const network = new NetworkVisualization(initialNodeCount, initialMaxDistance);
+
+        // Function to update content based on URL parameters
+        function updateContentFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const h1Text = urlParams.get('h1');
+            const pText = urlParams.get('p');
+
+            // h1 and p are already retrieved above, can reuse them or keep this for clarity
+            if (h1Text) {
+                document.querySelector('.content h1').textContent = h1Text;
+            }
+
+            if (pText) {
+                document.querySelector('.content p').textContent = pText;
+            }
+        }
+        
+        // Call the function to update content when the page loads
+        updateContentFromURL();
+
+        // Prevent context menu and selection
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('selectstart', e => e.preventDefault());
+    </script>
+
+</body>
+</html>
