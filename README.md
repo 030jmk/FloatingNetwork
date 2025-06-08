@@ -14,7 +14,7 @@ A simple, lightweight HTML page featuring a dynamic background visualization of 
 ## How to Use
 
 1.  Clone or download the repository.
-2.  Open the `network.html` file in your web browser.
+2.  Open the `index.html` file in your web browser.
 
 ### Customization via URL Parameters
 
